@@ -15,6 +15,8 @@ def get_subscriptions() -> list[dict]:
         logger.error(f"Ошибка запроса подписок: {e}")
         logger.error(response.text)
         return []
+    
+    
 
     subs = response.json()
     if subs.get("code") == "SUCCESS" and "data" in subs:
@@ -25,6 +27,9 @@ def get_subscriptions() -> list[dict]:
             for srv in sub.get("servers", []):
                 srv["sub_index"] = i
                 servers.append(srv)
+
+        count = len(servers)
+        logger.info(f"Всего серверов в подписках: {count}")
         return servers
     else:
         logger.error(f"Ошибка получения подписок: {subs.get('message', 'неизвестная ошибка')}")

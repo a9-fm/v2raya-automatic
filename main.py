@@ -32,15 +32,7 @@ def main():
         else:
             logger.error("Не удалось выключить V2ray")
     elif args.command == "ping":
-        good_servers = ping_all_servers()
-
-        if good_servers:
-            with open("good_servers.json", "w", encoding="utf-8") as f:
-                import json
-                json.dump(good_servers, f, ensure_ascii=False, indent=2)
-            logger.success(f"Сервера с пингом <400ms записаны в good_servers.json ({len(good_servers)} шт.)")
-        else:
-            logger.warning("Нет серверов с пингом меньше 400ms")
+        ping_all_servers()
     elif args.command == "list":
         servers = get_subscriptions()
         if servers:

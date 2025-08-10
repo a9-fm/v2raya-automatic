@@ -2,12 +2,12 @@ import requests
 import urllib.parse
 import uuid
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from loguru import logger
+
 from config import config
 from src.utils import HEADERS
-
 from src.get_subscriptions import get_subscriptions
-
-from loguru import logger
 
 def ping_server(server) -> dict:
     whiches = [{
@@ -24,36 +24,36 @@ def ping_server(server) -> dict:
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
     data = resp.json()
-    logger.info(f"Пингуем {server['name']}, ответ: {json.dumps(data, indent=2, ensure_ascii=False)}")
-    return data
+    logger.info(f"Пингуем {server['name']}, CODE: {data['code']} | ID: {data['data']['whiches'][0]['id']} | MS: {data['data']['whiches'][0]['pingLatency']}")
+    return server, data
 
-def ping_all_servers(servers=None) -> dict:
+def ping_all_servers(servers=None) -> list[tuple]:
+    if servers is None:
+        servers = get_subscriptions()
+
     results = []
     good_servers = []
 
-    if not servers:
-        servers = get_subscriptions()
+    with ThreadPoolExecutor(max_workers=10) as executor:  # Подкорректируй max_workers под себя
+        futures = {executor.submit(ping_server, srv): srv for srv in servers}
 
-    for srv in servers:
-        try:
-            data = ping_server(srv)
-
-            if data.get("code") == "SUCCESS":
-                which = data["data"]["whiches"][0]
-                latency_str = which.get("pingLatency", "").replace("ms", "").strip()
-
-                if latency_str.isdigit():
-                    latency = int(latency_str)
-                    if latency < 400:
-                        good_servers.append({
-                            "name": srv["name"],
-                            "id": srv["id"],
-                            "latency_ms": latency
-                        })
-                        logger.info(f"{srv['name']} | {srv['id']} | {latency}ms")
-
-            results.append((srv, data))
-        except Exception as e:
-            logger.error(f"Ошибка пинга сервера {srv['name']}: {e}")
+        for future in as_completed(futures):
+            srv = futures[future]
+            try:
+                srv, data = future.result()
+                if data.get("code") == "SUCCESS":
+                    which = data["data"]["whiches"][0]
+                    latency_str = which.get("pingLatency", "").replace("ms", "").strip()
+                    if latency_str.isdigit():
+                        latency = int(latency_str)
+                        if latency < 400:
+                            good_servers.append({
+                                "name": srv["name"],
+                                "id": srv["id"],
+                                "latency_ms": latency
+                            })
+                results.append((srv, data))
+            except Exception as e:
+                logger.error(f"Ошибка пинга сервера {srv['name']}: {e}")
 
     return results
