@@ -16,8 +16,6 @@ def get_subscriptions() -> list[dict]:
         logger.error(response.text)
         return []
     
-    
-
     subs = response.json()
     if subs.get("code") == "SUCCESS" and "data" in subs:
         touch = subs["data"].get("touch", {})
@@ -25,6 +23,9 @@ def get_subscriptions() -> list[dict]:
         servers = []
         for i, sub in enumerate(subscriptions):
             for srv in sub.get("servers", []):
+                net = str(srv.get("net", "")).lower()
+                if any(x in net for x in ["xhttp", "httpupgrade+tls"]):
+                    continue
                 srv["sub_index"] = i
                 servers.append(srv)
 
@@ -34,3 +35,5 @@ def get_subscriptions() -> list[dict]:
     else:
         logger.error(f"Ошибка получения подписок: {subs.get('message', 'неизвестная ошибка')}")
         return []
+
+
