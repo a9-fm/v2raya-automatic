@@ -27,11 +27,12 @@ def get_subscriptions() -> list[dict]:
                 if any(x in net for x in ["xhttp", "httpupgrade+tls", "httpupgrade"]):
                     continue
 
-                # Добавлять sub_index один раз достаточно
-                srv["sub_index"] = i
-
-                is_valid = "s" in net or "ss" in net
+                net = srv.get("net", "").lower()
+                is_valid = "vless" in net or "ss" in net
+                
                 if is_valid:
+                    # Добавлять sub_index один раз достаточно
+                    srv["sub_index"] = i
                     servers.append(srv)
                     logger.debug(f"Добавляем сервер: {srv.get('name')} | Net: {net}")
                 else:
@@ -40,7 +41,7 @@ def get_subscriptions() -> list[dict]:
                         f"Net: {net or 'не указан'}, "
                         f"Адрес: {srv.get('address', 'не указан')}"
                     )
-
+        
         count = len(servers)
         logger.info(f"Всего серверов в подписках: {count}")
         return servers
