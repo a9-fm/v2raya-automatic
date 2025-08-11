@@ -28,38 +28,57 @@ def ping_server(server) -> dict:
     return data
 
 def ping_all_servers(servers=None) -> dict:
-    results = []
-    good_servers = []
-
     if not servers:
         servers = get_subscriptions()
 
-    for srv in servers:
-        try:
-            data = ping_server(srv)
+    # Формируем список объектов для запроса
+    whiches = [{
+        "id": srv["id"],
+        "_type": srv["_type"],
+        "sub": srv.get("sub_index", 0)
+    } for srv in servers]
 
-            if data.get("code") == "SUCCESS":
-                which = data["data"]["whiches"][0]
-                latency_str = which.get("pingLatency", "").replace("ms", "").strip()
+    param = urllib.parse.quote(json.dumps(whiches))
+    url = f"{config.api_url}/api/httpLatency?whiches={param}"
 
-                if latency_str.isdigit():
-                    latency = int(latency_str)
-                    if latency < 400:
-                        good_servers.append({
-                            "name": srv["name"],
-                            "id": srv["id"],
-                            "latency_ms": latency
-                        })
-            results.append((srv, data))
-        except Exception as e:
-            logger.error(f"Ошибка пинга сервера {srv['name']}: {e}")
+    headers = HEADERS.copy()
+    headers["X-V2raya-Request-Id"] = str(uuid.uuid4())
 
-    # Записываем good_servers в JSON файл
     try:
-        with open("good_servers.json", "w", encoding="utf-8") as f:
-            json.dump(good_servers, f, indent=4, ensure_ascii=False)
-        logger.info(f"Сохранили {len(good_servers)} валидных серверов в good_servers.json")
-    except Exception as e:
-        logger.error(f"Ошибка при записи good_servers.json: {e}")
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
 
-    return results
+        results = []
+        good_servers = []
+
+        if data.get("code") == "SUCCESS":
+            whiches_data = data["data"]["whiches"]
+            for which in whiches_data:
+                srv_id = which.get("id")
+                latency_str = which.get("pingLatency", "").replace("ms", "").strip()
+                srv = next((s for s in servers if s["id"] == srv_id), None)
+                if srv:
+                    results.append((srv, which))
+                    if latency_str.isdigit():
+                        latency = int(latency_str)
+                        if latency < 400:
+                            good_servers.append({
+                                "name": srv["name"],
+                                "id": srv["id"],
+                                "latency_ms": latency
+                            })
+            # Запись валидных серверов
+            with open("good_servers.json", "w", encoding="utf-8") as f:
+                json.dump(good_servers, f, indent=4, ensure_ascii=False)
+            logger.info(f"Сохранили {len(good_servers)} валидных серверов в good_servers.json")
+        else:
+            logger.error(f"Ошибка в ответе на пинг: {data.get('message', 'без сообщения')}")
+
+        return results
+
+    except Exception as e:
+        logger.error(f"Ошибка пинга серверов: {e}")
+        return []
+
+print(ping_all_servers())
