@@ -27,10 +27,10 @@ def get_subscriptions() -> list[dict]:
                 if any(x in net for x in ["xhttp", "httpupgrade+tls", "httpupgrade"]):
                     continue
 
+                # Добавлять sub_index один раз достаточно
                 srv["sub_index"] = i
-                valid_protocols = ["vmess", "ss"]
-                is_valid = any(net.startswith(proto) for proto in valid_protocols)
 
+                is_valid = "s" in net or "ss" in net
                 if is_valid:
                     servers.append(srv)
                     logger.debug(f"Добавляем сервер: {srv.get('name')} | Net: {net}")

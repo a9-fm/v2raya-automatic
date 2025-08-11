@@ -1,7 +1,6 @@
 import requests
 
 from config import config
-from src.utils import HEADERS
 
 
 import uuid
@@ -28,6 +27,23 @@ headers = {
     "Content-Length": "0"
 }
 
+
+import uuid
+import requests
+
+from config import config
+from src.login import get_token
+
+HEADERS = {
+    "Authorization": get_token(),
+    "Content-Type": "application/json",
+    "X-V2raya-Request-Id": str(uuid.uuid4()),
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json, text/plain, */*",
+    "Origin": f"{config.api_url}",
+    "Referer": f"{config.api_url}",
+    "Connection": "keep-alive"
+}
 def connect_server(server_id, sub_index=0, outbound="proxy"):
     url = f"{config.api_url}/api/connection"
     data = {
