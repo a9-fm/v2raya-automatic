@@ -11,7 +11,6 @@ from loguru import logger
 
 
 
-
 def ping_all_servers(servers=None) -> dict:
     if not servers:
         servers = get_subscriptions()

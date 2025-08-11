@@ -56,7 +56,6 @@ def off_v2raya():
 
 def on_v2raya():
 
-
     
     response = requests.post(f"{config.api_url}/api/v2ray", headers=headers, data=b"")  # пустое тело
     

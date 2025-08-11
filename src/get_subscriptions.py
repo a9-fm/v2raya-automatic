@@ -16,7 +16,6 @@ def get_subscriptions() -> list[dict]:
         logger.error(response.text)
         return []
 
-
     subs = response.json()
     if subs.get("code") == "SUCCESS" and "data" in subs:
         touch = subs["data"].get("touch", {})
