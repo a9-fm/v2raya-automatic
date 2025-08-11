@@ -9,23 +9,7 @@ from src.get_subscriptions import get_subscriptions
 
 from loguru import logger
 
-def ping_server(server) -> dict:
-    whiches = [{
-        "id": server["id"],
-        "_type": server["_type"],
-        "sub": server.get("sub_index", 0)
-    }]
-    param = urllib.parse.quote(json.dumps(whiches))
-    url = f"{config.api_url}/api/httpLatency?whiches={param}"
 
-    headers = HEADERS.copy()
-    headers["X-V2raya-Request-Id"] = str(uuid.uuid4())
-
-    resp = requests.get(url, headers=headers)
-    resp.raise_for_status()
-    data = resp.json()
-    logger.info(f"Пингуем {server['name']}, CODE: {data['code']} | ID: {data['data']['whiches'][0]['id']} | MS: {data['data']['whiches'][0]['pingLatency']}")
-    return data
 
 def ping_all_servers(servers=None) -> dict:
     if not servers:
@@ -81,4 +65,3 @@ def ping_all_servers(servers=None) -> dict:
         logger.error(f"Ошибка пинга серверов: {e}")
         return []
 
-print(ping_all_servers())
